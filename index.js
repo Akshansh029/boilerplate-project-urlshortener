@@ -19,7 +19,6 @@ app.get("/", function (req, res) {
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
-// In-memory database (for demo purposes)
 const urlDatabase = {};
 
 // Routes
@@ -45,8 +44,12 @@ app.get("/api/shorturl/:short_url", (req, res) => {
 
 // Helper function to validate URL
 function isValidUrl(string) {
-  const pattern = /^https?:\/\/www\.[a-zA-Z0-9-]+(\.[a-zA-Z]{2,})+$/;
-  return pattern.test(string);
+  try {
+    const url = new URL(string);
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch (error) {
+    return false;
+  }
 }
 
 app.listen(port, function () {
