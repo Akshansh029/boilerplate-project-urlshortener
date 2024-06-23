@@ -45,11 +45,10 @@ app.get("/api/shorturl/:short_url", (req, res) => {
   }
 });
 
-// Helper function to validate URL
 function isValidUrl(string) {
   try {
-    new URL(string);
-    return true;
+    const url = new URL(string);
+    return url.protocol === "http:" || url.protocol === "https:";
   } catch (error) {
     return false;
   }
