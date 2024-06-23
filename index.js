@@ -16,8 +16,6 @@ app.get("/", function (req, res) {
   res.sendFile(process.cwd() + "/views/index.html");
 });
 
-// Your first API endpoint
-// Middleware
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
@@ -45,13 +43,11 @@ app.get("/api/shorturl/:short_url", (req, res) => {
   }
 });
 
+// Helper function to validate URL
 function isValidUrl(string) {
   try {
     const url = new URL(string);
-    return (
-      (url.protocol === "http:" || url.protocol === "https:") &&
-      url.hostname.startsWith("www.")
-    );
+    return url.protocol === "http:" || url.protocol === "https:";
   } catch (error) {
     return false;
   }
