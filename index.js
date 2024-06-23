@@ -43,13 +43,18 @@ app.get("/api/shorturl/:short_url", (req, res) => {
 });
 
 // Helper function to validate URL
+// function isValidUrl(string) {
+//   try {
+//     const url = new URL(string);
+//     return url.protocol === "http:" || url.protocol === "https:";
+//   } catch (error) {
+//     return false;
+//   }
+// }
+// Helper function to validate URL
 function isValidUrl(string) {
-  try {
-    const url = new URL(string);
-    return url.protocol === "http:" || url.protocol === "https:";
-  } catch (error) {
-    return false;
-  }
+  const urlPattern = /^(https?:\/\/)?([a-zA-Z0-9.-]+)\.([a-zA-Z]{2,})(\/\S*)?$/;
+  return urlPattern.test(string);
 }
 
 app.listen(port, function () {
