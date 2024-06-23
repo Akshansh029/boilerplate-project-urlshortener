@@ -2,8 +2,15 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const app = express();
-const bodyParser = require("body-parser");
-const shortid = require("shortid");
+const BodyParser = require("body-parser");
+const DNS = require("dns");
+
+// configuring body-parser for POST methods
+app.use(
+  BodyParser.urlencoded({
+    extended: false,
+  })
+);
 
 // Basic Configuration
 const port = process.env.PORT || 3000;
@@ -16,54 +23,92 @@ app.get("/", function (req, res) {
   res.sendFile(process.cwd() + "/views/index.html");
 });
 
-app.use(bodyParser.urlencoded({ extended: false }));
-app.use(bodyParser.json());
+// array of object to map links with an ID
+const URLs = [];
 
-const urlDatabase = {};
+// ID variable to be mapped with
+let id = 0;
 
-// Routes
+// post request to create the shortened url
 app.post("/api/shorturl", (req, res) => {
-  const { url } = req.body;
-  if (!isValidUrl(url)) {
-    return res.status(400).json({ error: "invalid url" });
-  }
-  const shortUrl = shortid.generate();
-  urlDatabase[shortUrl] = url;
-  res.json({ original_url: url, short_url: shortUrl });
-});
+  const { url: _url } = req.body;
 
-app.get("/api/shorturl/:short_url", (req, res) => {
-  const { short_url } = req.params;
-  const originalUrl = urlDatabase[short_url];
-  if (originalUrl) {
-    res.redirect(originalUrl);
-  } else {
-    res.status(404).json({ error: "url not found" });
+  if (_url === "") {
+    return res.json({
+      error: "invalid url",
+    });
   }
-});
 
-// Helper function to validate URL
-// function isValidUrl(string) {
-//   try {
-//     const url = new URL(string);
-//     return url.protocol === "http:" || url.protocol === "https:";
-//   } catch (error) {
-//     return false;
-//   }
-// }
-// Helper function to validate URL
-function isValidUrl(string) {
-  if (!string) {
-    return false;
-  }
+  let parsed_url;
+  const modified_url = _url.replace(
+    /(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/,
+    ""
+  );
+
   try {
-    const url = new URL(string);
-    return true;
-  } catch (error) {
-    return false;
+    parsed_url = new URL(_url);
+  } catch (err) {
+    return res.json({
+      error: "invalid url",
+    });
   }
-}
+
+  DNS.lookup(modified_url, (err) => {
+    if (err) {
+      return res.json({
+        error: "invalid url",
+      });
+    } else {
+      const link_exists = URLs.find((l) => l.original_url === _url);
+
+      if (link_exists) {
+        return res.json({
+          original_url: _url,
+          short_url: id,
+        });
+      } else {
+        // increment for each new valid url
+        ++id;
+
+        // object creation for entry into url
+        const url_object = {
+          original_url: _url,
+          short_url: `${id}`,
+        };
+
+        // pushing each new entry into the array
+        URLs.push(url_object);
+
+        // return the new entry created
+        return res.json({
+          original_url: _url,
+          short_url: id,
+        });
+      }
+    }
+  });
+});
+
+// get request to navigate to the url
+app.get("/api/shorturl/:id", (req, res) => {
+  const { id: _id } = req.params;
+
+  // finding if the id already exists
+  const short_link = URLs.find((sl) => sl.short_url === _id);
+
+  if (short_link) {
+    return res.redirect(short_link.original_url);
+  } else {
+    return res.json({
+      error: "invalid URL",
+    });
+  }
+});
 
 app.listen(port, function () {
   console.log(`Listening on port ${port}`);
 });
+
+// app.listen(3000, () => {
+//   console.log("Server Running....");
+// });
